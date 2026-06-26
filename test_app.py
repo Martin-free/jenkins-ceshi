@@ -24,7 +24,7 @@ class TestWebApp(unittest.TestCase):
         # 测试首页 HTML 是否能正常渲染
         response = self.client.get('/')
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Jenkins 部署测试', response.data)
+        self.assertIn('Jenkins 部署测试', response.data)
 
 if __name__ == '__main__':
     unittest.main()
