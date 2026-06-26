@@ -10,7 +10,7 @@ pipeline {
         // 【新增】定义你的本地仓库绝对路径
         // Windows 示例: "C:/Users/wzy/projects/jenkins-ceshi"
         // Linux/Mac 示例: "/home/wzy/projects/jenkins-ceshi"
-        LOCAL_REPO_PATH = 'C:/Users/你的用户名/Projects/jenkins-ceshi'
+        LOCAL_REPO_PATH = 'C:/Users/26224/Desktop/jenkins-ceshi'
     }
 
     stages {
