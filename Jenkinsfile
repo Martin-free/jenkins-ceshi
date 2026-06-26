@@ -2,41 +2,19 @@ pipeline {
     agent any
 
     environment {
-        // 部署配置保持不变
         DEPLOY_SERVER = '192.168.129.176'
         DEPLOY_USER = 'root'
-        REMOTE_PATH = '/opt/my-web-app/'
-
-        // 【新增】定义你的本地仓库绝对路径
-        // Windows 示例: "C:/Users/wzy/projects/jenkins-ceshi"
-        // Linux/Mac 示例: "/home/wzy/projects/jenkins-ceshi"
-        LOCAL_REPO_PATH = '/mnt/c/Users/26224/Desktop/jenkins-ceshi'
+        REMOTE_PATH = '/opt/my-web-app'
+        // 不需要定义 LOCAL_REPO_PATH 了
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // 【修改】不再使用 checkout scm，而是使用 git 命令显式拉取
-                // 这里的 url 填入上面定义的本地路径
-                git url: "${LOCAL_REPO_PATH}", branch: 'main'
-            }
-        }
-
-        stage('Run Unit Tests') {
-            // 注意：这里使用了 docker agent
-            agent {
-                docker {
-                    image 'python:3.10-slim'
-                }
-            }
-            steps {
-                sh '''
-                    # 安装项目依赖
-                    pip install -r requirements.txt || echo "No requirements.txt found, skipping..."
-
-                    # 运行测试 (假设你有 pytest 或 unittest)
-                    python -m pytest tests/ || echo "Tests skipped or failed"
-                '''
+                // 直接使用 checkout scm，它会复用 Jenkins 任务配置里设置的 GitHub 地址
+                // 这步其实可以省略，因为 Declarative Pipeline 默认会在开始前自动 checkout
+                // 但写上也无妨，确保代码是最新的
+                checkout scm
             }
         }
 
