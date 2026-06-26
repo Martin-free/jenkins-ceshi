@@ -1,0 +1,76 @@
+pipeline {
+    agent any
+
+    environment {
+        DEPLOY_SERVER = '192.168.129.176' // 替换为你的部署服务器 IP
+        DEPLOY_USER = 'root'          // 替换为服务器用户名
+        REMOTE_PATH = '/opt/my-web-app' // 替换为服务器上的目标目录
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Run Unit Tests') {
+            agent {
+                // 使用带有 Python 环境的镜像，以便安装 Flask 依赖
+                docker { 
+                    image 'python:3.10-slim' 
+                }
+            }
+            steps {
+                sh '''
+                    # 安装项目依赖
+                    pip install -r requirements.txt
+                    # 运行单元测试
+                    pip install pytest
+                    pytest test_app.py --verbose --junit-xml test-reports/results.xml
+                '''
+            }
+            post {
+                always {
+                    junit 'test-reports/results.xml'
+                }
+            }
+        }
+
+        stage('Deploy to Server') {
+            steps {
+                script {
+                    echo "开始部署 Web 应用到服务器 ${DEPLOY_SERVER}..."
+                    
+                    // 1. 将整个项目代码（包括 templates 文件夹）传输到远程服务器
+                    sh """
+                        scp -r app.py test_app.py templates requirements.txt ${DEPLOY_USER}@${DEPLOY_SERVER}:${REMOTE_PATH}/
+                    """
+
+                    // 2. 通过 SSH 登录远程服务器，安装依赖并重启服务
+                    sh """
+                        ssh ${DEPLOY_USER}@${DEPLOY_SERVER} "
+                            cd ${REMOTE_PATH} &&
+                            echo '正在安装/更新 Python 依赖...' &&
+                            pip3 install -r requirements.txt &&
+                            echo '正在重启 Web 服务...' &&
+                            sudo systemctl restart my-web-app &&
+                            # 简单的健康检查：尝试访问本地接口
+                            sleep 2 &&
+                            curl -f http://localhost:8000/ || exit 1
+                        "
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '流水线执行成功！Web 页面已部署，请访问服务器 8000 端口查看。'
+        }
+        failure {
+            echo '流水线执行失败，请检查测试报告或部署日志！'
+        }
+    }
+}
